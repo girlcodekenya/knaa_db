@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: knaa_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: knaa_membership
+      MYSQL_USER: knaa_user
+      MYSQL_PASSWORD: knaa_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d
+    networks:
+      - knaa_network
+
+  php:
+    image: php:8.2-apache
+    container_name: knaa_php
+    restart: always
+    ports:
+      - "8000:80"
+    volumes:
+      - ./src:/var/www/html
+      - ./vendor:/var/www/vendor
+      - ./.env:/var/www/.env
+    depends_on:
+      - mysql
+    networks:
+      - knaa_network
+    command: >
+      bash -c "
+      apt-get update && 
+      apt-get install -y curl git unzip && 
+      curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer &&
+      docker-php-ext-install mysqli && 
+      apache2-foreground
+      "
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: knaa_phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+    networks:
+      - knaa_network
+
+volumes:
+  mysql_data:
+
+networks:
+  knaa_network:
+    driver: bridge
