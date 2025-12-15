@@ -26,6 +26,7 @@ if ($result->num_rows === 1) {
     $admin = $result->fetch_assoc();
     
     if (password_verify($password, $admin['password_hash'])) {
+        $_SESSION['admin_logged_in'] = true;
         $_SESSION['admin_id'] = $admin['admin_id'];
         $_SESSION['admin_username'] = $admin['username'];
         $_SESSION['admin_email'] = $admin['email'];
@@ -35,6 +36,17 @@ if ($result->num_rows === 1) {
         
         updateAdminLastLogin($admin['admin_id'], $conn);
         
+        if (isset($_GET['return']) && !empty($_GET['return'])) {
+            $return_url = $_GET['return'];
+            $allowed_pages = ['event_create.php', 'event_view.php', 'member_view.php', 'registration_view.php', 'dashboard.php'];
+            $page = basename($return_url);
+            
+            if (in_array($page, $allowed_pages)) {
+                header('Location: ' . $page);
+                exit();
+            }
+        }
+        
         header('Location: dashboard.php');
         exit();
     }
@@ -43,6 +55,7 @@ if ($result->num_rows === 1) {
 $stmt->close();
 $conn->close();
 
-header('Location: index.php?error=1');
+$return_param = isset($_GET['return']) ? '&return=' . urlencode($_GET['return']) : '';
+header('Location: index.php?error=1' . $return_param);
 exit();
 ?>
